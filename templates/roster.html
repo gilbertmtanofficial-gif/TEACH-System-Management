@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teach | Class Records</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        .box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-right: 10px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .Male { color: #3498db; font-weight: bold; }
+        .Female { color: #ff69b4; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        .btn-del { background: #ff4d4d; color: white; padding: 5px 10px; font-size: 11px; }
+        .flash-messages { list-style: none; padding: 0; margin-bottom: 20px; }
+        .flash-success { color: #2ecc71; font-weight: bold; }
+        .flash-error { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Class Records & Roster</h1>
+        <button onclick="location.href='/'" style="background:#333; color:white;">🏠 Dashboard</button>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-messages">
+        {% for category, message in messages %}
+          <li class="flash-{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div class="box">
+        <h3>+ Create New Class</h3>
+        <form action="{{ url_for('add_class_record') }}" method="POST">
+            <input type="text" name="class_name" placeholder="Class Name (e.g. 8B1)" required>
+            <button style="background:#2ecc71; color:white;">Register Class</button>
+        </form>
+    </div>
+
+    {% for c in classrooms %}
+    <div class="box">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>Class: {{ c.name }}</h2>
+            <button class="btn-del" onclick="if(confirm('Delete entire class?')) location.href='/delete_class_record/{{c.id}}'">Delete Class</button>
+        </div>
+
+        <form action="{{ url_for('add_student_record') }}" method="POST" style="background:#f9f9f9; padding:15px; border-radius:10px;">
+            <input type="hidden" name="class_id" value="{{c.id}}">
+            <input type="text" name="name" placeholder="Student Name" required>
+            <select name="gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+            <button style="background:#3498db; color:white;">Add to {{c.name}}</button>
+        </form>
+
+        <table>
+            <thead><tr><th>Name</th><th>Gender</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for s in c.students %}
+                <tr>
+                    <td>{{ s.name }}</td>
+                    <td class="{{ s.gender }}">{{ s.gender }}</td>
+                    <td>                       
+                        <form action="{{ url_for('move_student_record') }}" method="POST" style="display:inline;">
+                            <input type="hidden" name="student_id" value="{{s.id}}">
+                            <select onchange="this.form.submit()" name="new_class_id">
+                                <option value="">Move Student to...</option>
+                                {% for dest in classrooms %}
+                                    <option value="{{dest.id}}">{{dest.name}}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                        <button class="btn-del" onclick="if(confirm('Remove student?')) location.href='/delete_student_record/{{s.id}}'">Remove</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+</body>
+</html>
