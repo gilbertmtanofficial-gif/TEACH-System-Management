@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TEACH</title>
+    <style>
+        body {
+            background-image: url("{{ url_for('static', filename='images/classroom-bg.jpeg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-family: 'Times New Roman', serif;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+        }
+
+        .login-box {
+            background-color: rgba(255, 255, 255, 0.95); 
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.4);
+            width: 350px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+
+        label { margin-bottom: 8px; font-weight: bold; color: #2c3e50; }
+
+        input[type="text"], input[type="password"] {
+            padding: 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 16px;
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover { background-color: #34495e; }
+
+        .register-link { margin-top: 20px; display: block; color: #2980b9; text-decoration: none; }
+        
+        .flash { color: #c0392b; margin-bottom: 15px; font-size: 14px; list-style: none; padding: 0;}
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h1>Login</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash">
+            {% for category, message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        <form method="post">
+            <div class="form-group">
+                <label>Username:</label>
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="login-btn">Log in</button>
+        </form>
+
+        <a href="{{ url_for('register') }}" class="register-link">Don't have an account? Register</a>
+    </div>
+
+</body>
+</html>
