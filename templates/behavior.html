@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TEACH | Seat Plan & Behavior</title>
+    <style>
+        :root { --male-blue: #00d2ff; --female-pink: #ff6a95; --glass: rgba(255, 255, 255, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding-top: 90px; overflow: hidden; height: 100vh; }
+
+        
+        .header-tools { position: fixed; top: 0; width: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); padding: 15px; display: flex; justify-content: center; gap: 10px; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .btn-g { padding: 8px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        
+        .seat-plan-area { position: relative; width: 100vw; height: calc(100vh - 90px); }
+        
+       
+        .card { 
+            position: absolute; width: 180px;
+            background: var(--glass); border-radius: 20px; padding: 15px; 
+            text-align: center; border: 1px solid rgba(255,255,255,0.1); 
+            transition: box-shadow 0.2s; z-index: 10;
+        }
+
+        
+        .drag-handle { cursor: grab; padding-bottom: 5px; }
+        .drag-handle:active { cursor: grabbing; }
+
+       
+        .avatar { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 5px; border: 3px solid white; background-size: cover; transition: 0.5s; position: relative; pointer-events: none; }
+        .Male { border-color: var(--male-blue); background-image: url('https://cdn-icons-png.flaticon.com/512/4128/4128176.png'); }
+        .Female { border-color: var(--female-pink); background-image: url('https://cdn-icons-png.flaticon.com/512/6997/6997662.png'); }
+
+        
+        .hp-bg { width: 100%; height: 8px; background: #334155; border-radius: 5px; margin: 5px 0; overflow: hidden; }
+        .hp-fill { height: 100%; background: linear-gradient(90deg, #f87171, #4ade80); transition: width 0.5s; }
+
+       
+        .button-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; pointer-events: auto; }
+        .btn-action { border: none; padding: 8px; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-plus { background: #059669; }
+        .btn-minus { background: #dc2626; }
+        .btn-silence { grid-column: span 2; background: #f59e0b; }
+
+       
+        .silenced { filter: grayscale(100%); transform: scale(1.3); }
+        .silenced::after { content: "🤐"; position: absolute; top: -5px; right: -5px; font-size: 25px; }
+        
+        .hammer-hit { animation: shake-hit 0.5s cubic-bezier(.36,.07,.19,.97) both; box-shadow: 0 0 40px red; z-index: 100; }
+        .confetti-pop { animation: pop-reward 0.5s ease-out both; box-shadow: 0 0 40px #4ade80; z-index: 100; }
+
+        @keyframes shake-hit { 0%, 100% { transform: translate3d(0, 0, 0); } 10%, 30%, 50%, 70%, 90% { transform: translate3d(-5px, 0, 0); } 20%, 40%, 60%, 80% { transform: translate3d(5px, 0, 0); } }
+        @keyframes pop-reward { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+       
+        .fx-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; font-size: 60px; pointer-events: none; opacity: 0; z-index: 101; }
+        .show-fx { opacity: 1; transition: 0.2s; }
+    </style>
+</head>
+<body ondragover="allowDrop(event)">
+
+    <div class="header-tools">
+        <button class="btn-g" style="background:#334155;" onclick="location.href='/'">🏠 DASHBOARD</button>
+        <button class="btn-g" style="background:#059669;" onclick="gUpdate('add', 5)">ALL +5 ✨</button>
+        <button class="btn-g" style="background:#dc2626;" onclick="gUpdate('sub', 5)">ALL -5 🔨</button>
+        <button class="btn-g" style="background:#d97706;" onclick="massSilence(true)">🚫 SILENCE ALL</button>
+        <button class="btn-g" style="background:#2563eb;" onclick="massSilence(false)">🔊 RESTORE</button>
+    </div>
+
+    <div class="seat-plan-area" id="plan-canvas">
+        {% for s in students %}
+        <div class="card" id="card-{{s.id}}" draggable="true" ondragstart="drag(event)"
+             style="top: {{ 10 + (loop.index0 // 5) * 220 }}px; left: {{ 20 + (loop.index0 % 5) * 200 }}px;">
+            
+            <div class="fx-overlay" id="fx-{{s.id}}"></div>
+
+            <div class="drag-handle">
+                <div class="avatar {{s.gender}}" id="av-{{s.id}}"></div>
+                <h4 style="margin:2px 0; font-size: 14px;">{{ s.name }}</h4>
+            </div>
+            
+            <div class="hp-bg"><div class="hp-fill" style="width: {{ (s.points / 50) * 100 if s.points < 50 else 100 }}%;"></div></div>
+            <div style="font-weight:bold; font-size:16px;">{{ s.points }} pts</div>
+            
+            <div class="button-grid">
+                <button class="btn-action btn-plus" onclick="triggerAction({{s.id}}, 'add', 3)">+3</button>
+                <button class="btn-action btn-plus" onclick="triggerAction({{s.id}}, 'add', 5)">+5</button>
+                <button class="btn-action btn-minus" onclick="triggerAction({{s.id}}, 'sub', 3)">-3</button>
+                <button class="btn-action btn-minus" onclick="triggerAction({{s.id}}, 'sub', 5)">-5</button>
+                <button class="btn-action btn-silence" onclick="toggleSilence({{s.id}})">SILENCE</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+       
+        function allowDrop(ev) { ev.preventDefault(); }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            const rect = ev.target.getBoundingClientRect();
+            ev.dataTransfer.setData("ox", ev.clientX - rect.left);
+            ev.dataTransfer.setData("oy", ev.clientY - rect.top);
+        }
+
+        document.getElementById('plan-canvas').addEventListener('drop', function(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var ox = ev.dataTransfer.getData("ox");
+            var oy = ev.dataTransfer.getData("oy");
+            var el = document.getElementById(data);
+            
+            el.style.left = (ev.clientX - this.offsetLeft - ox) + 'px';
+            el.style.top = (ev.clientY - this.offsetTop - oy) + 'px';
+        });
+
+        function triggerAction(id, type, val) {
+            const card = document.getElementById('card-'+id);
+            const fx = document.getElementById('fx-'+id);
+            
+            if(type === 'add') {
+                card.classList.add('confetti-pop');
+                fx.innerText = "🎉✨";
+                fx.classList.add('show-fx');
+            } else {
+                card.classList.add('hammer-hit');
+                fx.innerText = "🔨💥";
+                fx.classList.add('show-fx');
+            }
+
+            setTimeout(() => {
+                window.location.href = `/update_points/${id}/${type}/${val}`;
+            }, 600);
+        }
+
+        function gUpdate(type, val) {
+            window.location.href = `/global_update/{{classroom.id}}/${type}/${val}`;
+        }
+
+        function toggleSilence(id) {
+            document.getElementById('av-'+id).classList.toggle('silenced');
+        }
+
+        function massSilence(state) {
+            document.querySelectorAll('.avatar').forEach(av => state ? av.classList.add('silenced') : av.classList.remove('silenced'));
+        }
+    </script>
+</body>
+</html>
