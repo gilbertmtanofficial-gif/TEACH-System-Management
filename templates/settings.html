@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teach | Settings</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f4f7f6; color: #333; }
+        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; text-align: center; }    
+        .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 10px; }
+        .title-text { font-size: 24px; font-weight: bold; color: #8e44ad; }
+        .upload-area { max-width: 500px; margin: 0 auto; }
+        input[type="file"] { width: 100%; padding: 15px; margin: 15px 0; border: 2px dashed #8e44ad; border-radius: 10px; background: #f9f5ff; cursor: pointer; }
+        button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-dash { background: #333; color: white; }
+        .btn-upload { background: #8e44ad; color: white; width: 100%; font-size: 16px; }
+        .btn-del { background: #ff4d4d; color: white; padding: 5px 10px; }
+        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .item-row { background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }       
+        .flash { background: #d4edda; color: #155724; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="title-text">📚 Lesson Library Management</div>
+        <button class="btn-dash" onclick="location.href='/'">Back to Dashboard</button>
+    </div>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="box">
+        <div class="upload-area">
+            <h3 style="margin-top:0;">📤 Add New Lesson</h3>
+            <p style="color:#666; font-size:14px;">Select a PDF or PowerPoint from your device to upload to the local storage.</p>            
+            <form action="{{ url_for('settings') }}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".pdf,.ppt,.pptx" required>
+                <button type="submit" class="btn-upload">Upload to Local Library</button>
+            </form>
+        </div>
+    </div>
+    <div class="lib-grid">
+        <div class="box">
+            <h3 style="color:#2ecc71;">📖 Active Library</h3>
+            <hr style="border:0; border-top:1px solid #eee; margin-bottom:15px;">
+            {% for d in active_docs %}
+            <div class="item-row">
+                <span style="font-weight:500;">📄 {{ d.filename[:30] }}...</span>
+                <div>
+                    <button onclick="libAction({{d.id}}, 'archive')" style="background:#ffae42; color:white; font-size:11px;">Archive</button>
+                    <button class="btn-del" onclick="libAction({{d.id}}, 'delete')">🗑️</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="box">
+            <h3 style="color:#e67e22;">📁 Archived Storage</h3>
+            <hr style="border:0; border-top:1px solid #eee; margin-bottom:15px;">
+            {% for d in archived_docs %}
+            <div class="item-row">
+                <span><i style="color:#888;">{{ d.filename[:25] }}...</i></span>
+                <div>
+                    <button onclick="libAction({{d.id}}, 'restore')" style="background:#3498db; color:white; font-size:11px;">Restore</button>
+                    <button class="btn-del" onclick="libAction({{d.id}}, 'delete')">🗑️</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function libAction(id, act) {
+    if(act === 'delete' && !confirm('Are you sure? This will permanently delete the file from your computer.')) return;
+    
+    fetch('/lib_action', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            ids: [id], 
+            action: act
+        })
+    }).then(response => {
+        if (response.ok) {
+            location.reload(); 
+        } else {
+            alert("Error performing action.");
+        }
+    });
+}
+    </script>
+</body>
+</html>
